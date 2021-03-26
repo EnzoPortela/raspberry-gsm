@@ -1,6 +1,15 @@
 # Connect the Raspberry Pi to the internet via GSM
 
-![RaspberryPi Diagram](https://github.com/Instituto-Iracema/documentation/blob/main/Firmware/src/gpio_raspberry4.png?raw=true)
+| Raspberry Pi | SIM800L      |
+|--------------|--------------|
+| RX           | TX           |
+| TX           | RX           |
+| 5v           | 4.3v (diode) |
+| GND          | GND          |
+
+| :boom: DANGER              |
+|:---------------------------|
+| You must place a n4007 diode to supply the appropriate voltage for the module. |
 
 Install PPP
 
@@ -39,8 +48,16 @@ $ nano /etc/ppp/pap-secrets
 ```
 Modify this file according to your preferences.
 ```sh
-#    *      password
-tim tim tim
+*	hostname	""	*
+
+guest   hostname        "*"     -
+master  hostname        "*"     -
+root    hostname        "*"     -
+support hostname        "*"     -
+stats   hostname        "*"     -
+
+#	*	password
+vivo	vivo	vivo
 ```
 
 Now, you should now create the file inside the /etc/ppp/peer folder. Here will be the settings for each operator and the path to the chat file.
@@ -60,7 +77,7 @@ remotename vivo
 ipparam vivo
 persist
 usepeerdns
-/dev/ttyUSB0 115200 crtscts
+/dev/ttyAMA1 115200 crtscts
 #replacedefaultroute -- Check it later
 connect 'chat -v -f /etc/ppp/chat/tim-3g.chat'
 ```
@@ -68,18 +85,23 @@ connect 'chat -v -f /etc/ppp/chat/tim-3g.chat'
 Now we are going to create the file responsible for sending AT commands to the 3G module to establish the internet connection. In this case I'm using the SIM800L module. 
 
 ```
-ECHO
-ON
-ABORT
-'BUSY'
-ABORT
-'NO CARRIER'
-ABORT
-'ERROR'
-""
-ATZ OK
-\d\dAT+CGDCONT=1,"IP","timbrasil.br" OK
-\d\d\dATDT*99# CONNECT
+ABORT 'BUSY'
+ABORT 'NO CARRIER'
+ABORT 'VOICE'
+ABORT 'NO DIALTONE'
+ABORT 'NO DIAL TONE'
+ABORT 'NO ANSWER'
+ABORT 'DELAYED'
+TIMEOUT 20
+REPORT CONNECT
+
+"" AT
+OK ATH
+OK ATZ
+OK ATQ0
+OK AT+CGDCONT=1,"IP","zap.vivo.com.br"
+OK ATDT*99#
+CONNECT ''
 ```
 In this case, I'm using TIM as an internet provider. So I'm going to put TIM's APN which is timbrasil.br.
 
